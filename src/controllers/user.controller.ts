@@ -9,16 +9,34 @@ import {
   getFileteredUser,
   getImages,
 } from "../utils/helper";
-import { generateUniqueCode, getUserById } from "../services/user.services";
+import {
+  generateUniqueCode,
+  getUserByEmail,
+  getUserById,
+} from "../services/user.services";
 import ErrorHandler from "../utils/ErrorHandler";
 import User from "../model/user.model";
 import { sendEmail } from "../utils/sendEmail";
 import { userRole } from "../utils/enums";
+import {
+  ChangePasswordRequest,
+  CompleteRegistrationRequest,
+  LoginUserRequest,
+  RegisterUserRequest,
+  SendOtpRequest,
+  SocilLoginRequest,
+  VerifyOtpRequest,
+} from "../type/API/User/types";
 
 const register = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const {
+  async (
+    req: Request<{}, {}, RegisterUserRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    let {
       username,
+      role,
       email,
       countryCode,
       phone,
@@ -28,6 +46,7 @@ const register = TryCatch(
       deviceToken,
       deviceType,
     } = req.body;
+    email = email.toLowerCase();
 
     let user = await User.findOne({
       email,
@@ -41,6 +60,7 @@ const register = TryCatch(
     if (!user) {
       user = await User.create({
         username,
+        role,
         email,
         countryCode,
         phone,
@@ -73,8 +93,12 @@ const register = TryCatch(
 );
 
 const verifyOtp = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, otp, type } = req.body; // Verification:1,Forgot:2
+  async (
+    req: Request<{}, {}, VerifyOtpRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId, otp, type } = req.body; // Verification:1,Forgot:2,ChangeEmail:3
     const user = await getUserById(userId);
     const now = new Date();
 
@@ -91,6 +115,11 @@ const verifyOtp = TryCatch(
     user.otpExpiry = undefined;
     if (type == 1) user.isVerified = true;
     user.otpVerified = true;
+    if (type == 3) {
+      user.email = user.unVerifiedTempCredentials.email;
+      user.unVerifiedTempCredentials.email = undefined;
+      user.isVerified = false;
+    }
     await user.save();
     return SUCCESS(res, 200, `OTP verified successfully`, {
       data: {
@@ -102,11 +131,17 @@ const verifyOtp = TryCatch(
 );
 
 const sendOtp = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { email, type } = req.body; // Forgot:1,Resend:2
+  async (
+    req: Request<{}, {}, SendOtpRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    let { email, type } = req.body; // Forgot:1,Resend:2,ChangeEmail:3
+    const emailTemplate = type == 1 ? 3 : type == 2 ? 4 : 5;
+    email = email.toLowerCase();
 
     let query: any = { email };
-    if (type == 1) query.isVerified = true;
+    if (type != 2) query.isVerified = true;
     const user = await User.findOne(query);
     if (!user) return next(new ErrorHandler("User not found", 404));
 
@@ -115,21 +150,41 @@ const sendOtp = TryCatch(
     user.otpExpiry = new Date(addMinutesToCurrentTime(2));
     user.otpVerified = false;
     await user.save();
-    await sendEmail(user.email, 1, otp);
+    await sendEmail(user.email, emailTemplate, otp);
 
     return SUCCESS(
       res,
       200,
-      `OTP ${type == 1 ? "sent" : "resent"} successfully`
+      `OTP ${type == 2 ? "resent" : "sent"} successfully`
     );
   }
 );
 
-const completeRegistration = TryCatch(
+const searchCareTaker = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
+    const { careTakerCode } = req.query;
+
+    const users = await User.find({ careTakerCode }).select(
+      "username relationship"
+    );
+
+    if (!users || users.length == 0)
+      return next(new ErrorHandler("No CareTaker found", 404));
+
+    return SUCCESS(res, 200, "CareTaker fetched successfully", {
+      data: { users },
+    });
+  }
+);
+
+const completeRegistration = TryCatch(
+  async (
+    req: Request<{}, {}, CompleteRegistrationRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const {
       userId,
-      role,
       relationship,
       country,
       gender,
@@ -153,14 +208,14 @@ const completeRegistration = TryCatch(
     if (!user.isVerified)
       return next(new ErrorHandler("Please verify your account", 400));
 
-    if (role == userRole.CARETAKER) {
+    if (user.role == userRole.CARETAKER) {
       const careTakerCode = await generateUniqueCode();
       user.careTakerCode = careTakerCode;
       user.relationship = relationship;
       user.isRegistrationCompleted = true;
     }
 
-    if (role == userRole.USER) {
+    if (user.role == userRole.USER) {
       const { photos } = getImages(req, ["photos"]);
       if (photos.length < 2) {
         return next(new ErrorHandler("Minimum 2 photos are required", 400));
@@ -201,7 +256,11 @@ const completeRegistration = TryCatch(
 );
 
 const changePassword = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (
+    req: Request<{}, {}, ChangePasswordRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { userId, password } = req.body;
     const user = await getUserById(userId);
 
@@ -216,7 +275,11 @@ const changePassword = TryCatch(
 );
 
 const login = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (
+    req: Request<{}, {}, LoginUserRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { username, password, deviceToken, deviceType, latitude, longitude } =
       req.body;
 
@@ -226,29 +289,37 @@ const login = TryCatch(
     const isMatched = await user.matchPassword(password);
     if (!isMatched) return next(new ErrorHandler("Invalid credentials", 400));
 
-    if (latitude && longitude)
+    if (latitude && longitude) {
       user.location = {
         type: "Point",
         coordinates: [longitude, latitude],
       };
-
-    const jti = generateRandomString(20);
-    const token = generateJwtToken({ userId: user._id, jti });
-    user.jti = jti;
-    user.deviceToken = deviceToken;
-    user.deviceType = deviceType;
+    }
+    let token: string = "";
+    if (user.isRegistrationCompleted) {
+      const jti = generateRandomString(20);
+      token = generateJwtToken({ userId: user._id, jti });
+      user.jti = jti;
+      user.deviceToken = deviceToken;
+      user.deviceType = deviceType;
+    }
     await user.save();
 
     return SUCCESS(res, 200, "LoggedIn successfully", {
       data: {
-        token,
+        token: token ? token : undefined,
         user: getFileteredUser(user.toObject()),
       },
     });
   }
 );
+
 const socialLogin = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (
+    req: Request<{}, {}, SocilLoginRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const {
       socialId,
       email,
@@ -312,7 +383,68 @@ const socialLogin = TryCatch(
 );
 
 const updateUser = TryCatch(
-  async (req: Request, res: Response, next: NextFunction) => {}
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    let {
+      username,
+      countryCode,
+      phone,
+      bio,
+      yourIntellectualDisabilities,
+      interests,
+      careTakerId,
+      enableNotification,
+      visibility,
+    } = req.body;
+
+    const { profileImage } = getImages(req, ["profileImage"]);
+
+    if (username) user.username = username;
+    if (profileImage) user.profileImage = profileImage;
+    if (phone && countryCode) {
+      user.countryCode = countryCode;
+      user.phone = phone;
+    }
+    if (bio) user.bio = bio;
+    if (enableNotification) user.enableNotification = enableNotification;
+    if (visibility) user.visibility = visibility;
+    if (yourIntellectualDisabilities) {
+      user.yourIntellectualDisabilities = yourIntellectualDisabilities;
+    }
+    if (interests) {
+      user.interests = interests.includes(",")
+        ? interests.split(",")
+        : [interests];
+    }
+    if (careTakerId) {
+      user.careTakerId = careTakerId.includes(",")
+        ? careTakerId.split(",")
+        : careTakerId;
+    }
+
+    await user.save();
+    return SUCCESS(res, 200, "User updated successfully");
+  }
+);
+
+const changeCredentials = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const { email } = req.body;
+    const isUserExists = await getUserByEmail(email);
+    if (isUserExists)
+      return next(new ErrorHandler("User already exist with this email", 404));
+
+    const otp = generateOTP();
+    user.otp = Number(otp);
+    user.otpExpiry = new Date(addMinutesToCurrentTime(2));
+    user.otpVerified = false;
+    user.unVerifiedTempCredentials.email = email;
+    await user.save();
+    await sendEmail(user.email, 5, otp);
+
+    return SUCCESS(res, 200, "Verification code has been sent to your email");
+  }
 );
 
 const getUser = TryCatch(
@@ -325,6 +457,22 @@ const getUser = TryCatch(
     });
   }
 );
+
+const resetPassword = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    const { oldPassword, password } = req.body;
+    const isMatched = user.matchPassword(oldPassword);
+
+    if (!isMatched)
+      return next(new ErrorHandler("Old password is incorrect", 400));
+
+    user.password = password;
+    await user.save();
+    return SUCCESS(res, 200, "Password changed successfully");
+  }
+);
+
 const logout = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
@@ -334,15 +482,28 @@ const logout = TryCatch(
   }
 );
 
+const removeAccount = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req;
+    user.isDeleted = true;
+    await user.save();
+    return SUCCESS(res, 200, "User account deleted successfully");
+  }
+);
+
 export default {
   register,
   completeRegistration,
   verifyOtp,
   sendOtp,
+  searchCareTaker,
   changePassword,
   login,
   socialLogin,
   updateUser,
+  changeCredentials,
   getUser,
+  resetPassword,
   logout,
+  removeAccount,
 };

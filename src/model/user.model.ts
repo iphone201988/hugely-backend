@@ -7,6 +7,7 @@ import {
   gender,
   socialTypeEnums,
   userRole,
+  visibilityEnum,
 } from "../utils/enums";
 import { UserModel } from "../type/Database/types";
 
@@ -73,6 +74,15 @@ const userSchema = new Schema<UserModel>(
     profileImage: { type: String },
     careTakerCode: { type: String },
     isRegistrationCompleted: { type: Boolean, default: false },
+    enableNotification: { type: Boolean, default: false },
+    visibility: {
+      type: String,
+      enum: [visibilityEnum.PUBLIC, visibilityEnum.HIDE],
+      default: visibilityEnum.PUBLIC,
+    },
+    unVerifiedTempCredentials: {
+      email: { type: String },
+    },
   },
   { timestamps: true }
 );

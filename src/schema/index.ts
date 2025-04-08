@@ -22,6 +22,28 @@ export const stringValidation = (key: string, isRequired: boolean = true) => {
   return schema;
 };
 
+export const string = (key: string, isRequired: boolean = true) => {
+  let schema: any;
+  if (isRequired) {
+    schema = Joi.string()
+      .required()
+      .messages({
+        "string.empty": `${key} cannot be empty.`,
+        "string.base": `${key} should be a type of text`,
+        "any.required": `${key} is required`,
+      });
+  } else {
+    schema = Joi.string()
+      .optional()
+      .messages({
+        "string.empty": `${key} cannot be empty.`,
+        "string.base": `${key} should be a type of text`,
+      });
+  }
+
+  return schema;
+};
+
 export const numberValidation = (
   key: string,
   isRequired: boolean = true,
@@ -74,14 +96,18 @@ export const ObjectIdValidation = (key: string, isRequired: boolean = true) => {
   return schema;
 };
 
-export const passwordValidation = () => {
-  return Joi.string().min(6).max(50).required().messages({
-    "string.base": "Password should be a type of text.",
-    "string.empty": "Password cannot be empty.",
-    "string.min": "Password should have at least 6 characters.",
-    "string.max": "Password should not exceed 50 characters.",
-    "any.required": "Password is required.",
-  });
+export const passwordValidation = (key: string = "Password") => {
+  return Joi.string()
+    .min(6)
+    .max(50)
+    .required()
+    .messages({
+      "string.base": `${key} should be a type of text.`,
+      "string.empty": `${key} cannot be empty.`,
+      "string.min": `${key} should have at least 6 characters.`,
+      "string.max": `${key} should not exceed 50 characters.`,
+      "any.required": `${key} is required.`,
+    });
 };
 
 export const emailValidation = (isRequired: boolean = true) => {

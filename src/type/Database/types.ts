@@ -37,6 +37,11 @@ export interface UserModel extends Document {
   profileImage: string;
   careTakerCode: string;
   isRegistrationCompleted: boolean;
+  enableNotification: boolean;
+  visibility: string;
+  unVerifiedTempCredentials: {
+    email: string;
+  };
 
   // Methods
   matchPassword(password: string): Promise<boolean>;

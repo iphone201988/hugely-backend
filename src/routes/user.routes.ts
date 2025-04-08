@@ -4,6 +4,7 @@ import validate from "../middleware/validate.middleware";
 import userSchema from "../schema/user.schema";
 import upload from "../middleware/multer.middleware";
 import validateFiles from "../middleware/validateFiles.middleware";
+import { authenticationMiddleware } from "../middleware/auth.middleware";
 
 const userRouter = express.Router();
 
@@ -38,6 +39,7 @@ userRouter.post(
   validate(userSchema.loginSchema),
   userController.login
 );
+userRouter.post("/logout", userController.logout);
 
 userRouter.post(
   "/socialLogin",
@@ -45,6 +47,33 @@ userRouter.post(
   userController.socialLogin
 );
 
-userRouter.get("/", userController.getUser);
+userRouter.put(
+  "/updateUser",
+  authenticationMiddleware,
+  upload.fields([{ name: "profileImage", maxCount: 1 }]),
+  validateFiles(["profileImage"]),
+  validate(userSchema.updateUserSchema),
+  userController.updateUser
+);
+userRouter.put(
+  "/changeCredentials",
+  authenticationMiddleware,
+  validate(userSchema.changeCredentialsSchema),
+  userController.changeCredentials
+);
+userRouter.put(
+  "/resetPassword",
+  authenticationMiddleware,
+  validate(userSchema.resetPasswordSchema),
+  userController.resetPassword
+);
+
+userRouter.get("/", authenticationMiddleware, userController.getUser);
+userRouter.get(
+  "/searchCareTaker",
+  validate(userSchema.searchCareTakerSchema),
+  userController.searchCareTaker
+);
+userRouter.delete("/", authenticationMiddleware, userController.removeAccount);
 
 export default userRouter;

@@ -13,11 +13,22 @@ import {
   gender,
   socialTypeEnums,
   userRole,
+  visibilityEnum,
 } from "../utils/enums";
 
 const registerUserSchema = {
   body: Joi.object({
     username: stringValidation("Username"),
+    role: Joi.string()
+      .valid(...Object.values(userRole))
+      .required()
+      .messages({
+        "string.base": `Role must be a string.`,
+        "any.required": `Role is required.`,
+        "any.only": `Role must be one of: ${Object.values(userRole).join(
+          ", "
+        )}.`,
+      }),
     email: emailValidation(),
     countryCode: stringValidation("Country code"),
     phone: stringValidation("Phone"),
@@ -75,36 +86,13 @@ const sendOTPSchema = {
 const completeRegistrationSchema = {
   body: Joi.object({
     userId: ObjectIdValidation("UserID"),
-    role: Joi.string()
-      .valid(...Object.values(userRole))
-      .required()
-      .messages({
-        "string.base": `Role must be a string.`,
-        "any.required": `Role is required.`,
-        "any.only": `Role must be one of: ${Object.values(userRole).join(
-          ", "
-        )}.`,
-      }),
-    relationship: Joi.string()
-      .when("role", { is: userRole.CARETAKER, then: Joi.required() })
-      .messages({
-        "string.base": "Relationship must be a string.",
-        "any.required": "Relationship is required.",
-      }),
-
-    country: Joi.string()
-      .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required": "Country is required.",
-        "string.empty": "Country cannot be empty.",
-        "string.base": "Country must be a string.",
-      }),
+    relationship: stringValidation("Relationship", false),
+    country: stringValidation("Country", false),
 
     gender: Joi.string()
       .valid(...Object.values({ ...gender }))
-      .when("role", { is: userRole.USER, then: Joi.required() })
+      .optional()
       .messages({
-        "any.required": "Gender is required.",
         "string.empty": "Gender cannot be empty.",
         "string.base": "Gender must be a string.",
         "any.only": `Gender must be one of: ${Object.values(gender).join(
@@ -112,33 +100,19 @@ const completeRegistrationSchema = {
         )}.`,
       }),
 
-    dob: Joi.date()
-      .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required": "Date of birth is required",
-        "date.base": `Date of birth must be a valid date.`,
-      }),
+    dob: Joi.date().optional().messages({
+      "date.base": `Date of birth must be a valid date.`,
+    }),
 
-    yourIntellectualDisabilities: Joi.string()
-      .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required":
-          "Your Intellectual Disabilities information is required.",
-        "string.empty": "Your Intellectual Disabilities cannot be empty.",
-        "string.base": "Your Intellectual Disabilities must be a string.",
-      }),
-
-    interests: Joi.string()
-      .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required": "Interests are required.",
-        "string.empty": "Interests cannot be empty.",
-        "string.base": "Interests must be a string.",
-      }),
+    yourIntellectualDisabilities: stringValidation(
+      "Your Intellectual Disabilities",
+      false
+    ),
+    interests: stringValidation("Interests", false),
 
     drink: Joi.string()
       .valid(...Object.values(drinkHabbit))
-      .when("role", { is: userRole.USER, then: Joi.required() })
+      .optional()
       .messages({
         "any.required": "Drink preference is required.",
         "string.empty": "Drink preference cannot be empty.",
@@ -150,7 +124,7 @@ const completeRegistrationSchema = {
 
     likeToDate: Joi.string()
       .valid(...Object.values(gender))
-      .when("role", { is: userRole.USER, then: Joi.required() })
+      .optional()
       .messages({
         "any.required": "Like to Date preference is required.",
         "string.empty": "Like to Date cannot be empty.",
@@ -159,20 +133,14 @@ const completeRegistrationSchema = {
           ", "
         )}.`,
       }),
-
-    partnerIntellectualDisabilities: Joi.string()
-      .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required":
-          "Partner Intellectual Disabilities preference is required.",
-        "string.empty": "Partner Intellectual Disabilities cannot be empty.",
-        "string.base": "Partner Intellectual Disabilities must be a string.",
-      }),
+    partnerIntellectualDisabilities: stringValidation(
+      "Partner Intellectual Disabilities preference",
+      false
+    ),
 
     ageGroup: Joi.string()
       .valid(...Object.values(ageGroup))
       .optional()
-      //   .when("role", { is: userRole.USER, then: Joi.required() })
       .messages({
         "any.required": "Age Group is required.",
         "string.empty": "Age Group cannot be empty.",
@@ -181,20 +149,11 @@ const completeRegistrationSchema = {
           ", "
         )}.`,
       }),
-
-    bio: Joi.string()
-      .optional()
-      //   .when("role", { is: userRole.USER, then: Joi.required() })
-      .messages({
-        "any.required": "Bio is required.",
-        "string.empty": "Bio cannot be empty.",
-        "string.base": "Bio must be a string.",
-      }),
+    bio: stringValidation("Bio", false),
 
     careTakerId: Joi.string()
       .pattern(/^[0-9a-fA-F]{24}$/)
       .optional()
-      //   .when("role", { is: userRole.USER, then: Joi.required() })
       .messages({
         "string.base": `CareTaker ID should be a type of text`,
         "string.empty": `CareTaker ID cannot be empty`,
@@ -278,6 +237,54 @@ const loginSchema = {
   }),
 };
 
+const changeCredentialsSchema = {
+  body: Joi.object({
+    email: emailValidation(),
+  }),
+};
+
+const updateUserSchema = {
+  body: Joi.object({
+    username: stringValidation("Username", false),
+    countryCode: stringValidation("Country code", false),
+    phone: stringValidation("Phone", false),
+    bio: stringValidation("Bio", false),
+    yourIntellectualDisabilities: stringValidation(
+      "Intellectual Disabilities",
+      false
+    ),
+    interests: stringValidation("Interests", false),
+    careTakerId: stringValidation("Care Takers", false),
+    enableNotification: Joi.boolean().optional().messages({
+      "boolean.base": "Enable Notification must be true or false",
+    }),
+    visibility: Joi.string()
+      .valid(...Object.values(visibilityEnum))
+      .optional()
+      .messages({
+        "any.required": "Visibility is required.",
+        "string.empty": "Visibility cannot be empty.",
+        "string.base": "Visibility must be a string.",
+        "any.only": `Visibility must be one of: ${Object.values(
+          visibilityEnum
+        ).join(", ")}.`,
+      }),
+  }),
+};
+
+const resetPasswordSchema = {
+  body: Joi.object({
+    oldPassword: passwordValidation("Old Password"),
+    password: passwordValidation(),
+  }),
+};
+
+const searchCareTakerSchema = {
+  query: Joi.object({
+    careTakerCode: stringValidation("Care Taker Code"),
+  }),
+};
+
 export default {
   registerUserSchema,
   verifyOTPSchema,
@@ -285,4 +292,8 @@ export default {
   completeRegistrationSchema,
   socialLoginSchema,
   loginSchema,
+  changeCredentialsSchema,
+  updateUserSchema,
+  resetPasswordSchema,
+  searchCareTakerSchema,
 };

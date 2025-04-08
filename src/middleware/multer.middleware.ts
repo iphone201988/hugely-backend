@@ -9,11 +9,16 @@ if (!fs.existsSync(dir)) {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (!file.mimetype.includes("image"))
+    console.log("file.mimetype::::", file.mimetype, file);
+    if (
+      !file.mimetype.includes("image") &&
+      !file.mimetype.includes("octet-stream")
+    ) {
       return cb(
         new Error(`Only image is allowed for the ${file.fieldname}`),
         null
       );
+    }
     cb(null, dir);
   },
   filename: function (req, file, cb) {

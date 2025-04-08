@@ -29,6 +29,11 @@ export const drinkHabbit = {
   NEVER: "never",
 };
 
+export const visibilityEnum = {
+  PUBLIC: "public",
+  HIDE: "hide",
+};
+
 export const socialTypeEnums = {
   GOOGLE: 1,
   FACEBOOK: 2,
