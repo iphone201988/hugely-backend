@@ -169,6 +169,15 @@ const socialLoginSchema = {
     email: emailValidation(),
     username: stringValidation("Username"),
     profileImage: stringValidation("Profile Image"),
+    role: Joi.string()
+      .valid(...Object.values(userRole))
+      .optional()
+      .messages({
+        "string.base": `Role must be a string.`,
+        "any.only": `Role must be one of: ${Object.values(userRole).join(
+          ", "
+        )}.`,
+      }),
     latitude: Joi.number().min(-90).max(90).required().messages({
       "any.required": "Latitude is required.",
       "number.base": "Latitude must be a number.",
@@ -285,6 +294,12 @@ const searchCareTakerSchema = {
   }),
 };
 
+const getUserProfileSchema = {
+  params: Joi.object({
+    userId: ObjectIdValidation("UserID"),
+  }),
+};
+
 export default {
   registerUserSchema,
   verifyOTPSchema,
@@ -296,4 +311,5 @@ export default {
   updateUserSchema,
   resetPasswordSchema,
   searchCareTakerSchema,
+  getUserProfileSchema,
 };

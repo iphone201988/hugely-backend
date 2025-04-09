@@ -47,7 +47,6 @@ const userSchema = new Schema<UserModel>(
     role: {
       type: String,
       enum: [userRole.USER, userRole.CARETAKER],
-      require: true,
     },
     relationship: { type: String },
     country: { type: String },
@@ -87,6 +86,8 @@ const userSchema = new Schema<UserModel>(
   { timestamps: true }
 );
 
+userSchema.index({ location: '2dsphere' });
+  
 userSchema.pre("save", async function () {
   if (this.isModified("password")) {
     const hashedPassword = await bcrypt.hash(this.password, 10);

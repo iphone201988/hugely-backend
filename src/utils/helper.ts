@@ -43,11 +43,11 @@ export const getImages = (req: Request, fileNames: Array<string>) => {
       [fileNames[0]]: "/uploads/" + req.file.filename,
     };
   }
-
+  
   // Multiple files uploaded
   const files: any = {};
   fileNames.forEach((fileKey: string) => {
-    if (req.files && req.files[fileKey]) {
+    if (req?.files && req.files[fileKey]) {
       files[fileKey] = req.files[fileKey].map(
         (file: any) => "/uploads/" + file.filename
       );

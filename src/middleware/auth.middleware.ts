@@ -15,8 +15,8 @@ export const authenticationMiddleware = TryCatch(
     const decode = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
 
     if (!decode) return next(new ErrorHandler("Invalid token", 401));
-
-    const user = await User.findById(decode.id);
+    
+    const user = await User.findById(decode.userId);
 
     if (!user) return next(new ErrorHandler("User not found", 400));
 

@@ -46,3 +46,20 @@ export interface UserModel extends Document {
   // Methods
   matchPassword(password: string): Promise<boolean>;
 }
+
+export interface SwipeLogsModel extends Document {
+  userId: any;
+  rejectedUserIds: Array<any>;
+  likeSent: Array<any>;
+  receivedLikes: Array<any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MatchesModel extends Document {
+  match: Array<any>;
+  lastMessage: string;
+  hasUnreadMessages: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -55,6 +55,7 @@ export type LoginUserRequest = {
 export type SocilLoginRequest = {
   socialId: string;
   email: string;
+  role: string;
   username: string;
   profileImage: string;
   socialType: number;

@@ -27,6 +27,7 @@ import {
   SocilLoginRequest,
   VerifyOtpRequest,
 } from "../type/API/User/types";
+import SwipeLogs from "../model/swipeLogs.model";
 
 const register = TryCatch(
   async (
@@ -246,6 +247,8 @@ const completeRegistration = TryCatch(
     user.otpVerified = false;
     await user.save();
 
+    await SwipeLogs.create({ userId: user._id });
+
     return SUCCESS(res, 200, "User registration completed successfully", {
       data: {
         token,
@@ -283,7 +286,7 @@ const login = TryCatch(
     const { username, password, deviceToken, deviceType, latitude, longitude } =
       req.body;
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username, isDeleted: false });
     if (!user) return next(new ErrorHandler("Invalid credentials", 400));
 
     const isMatched = await user.matchPassword(password);
@@ -323,6 +326,7 @@ const socialLogin = TryCatch(
     const {
       socialId,
       email,
+      role,
       username,
       profileImage,
       longitude,
@@ -337,6 +341,7 @@ const socialLogin = TryCatch(
       email,
       isDeleted: false,
     });
+
     let isUserExists = true;
 
     if (!user) {
@@ -348,8 +353,7 @@ const socialLogin = TryCatch(
         socialType,
       });
     }
-    const jti = generateRandomString(20);
-    user.jti = jti;
+
     user.deviceToken = deviceToken;
     user.deviceType = deviceType;
 
@@ -361,10 +365,20 @@ const socialLogin = TryCatch(
 
     if (profileImage) user.profileImage = profileImage;
 
+    let token = "";
+
+    if (isUserExists && user.isRegistrationCompleted) {
+      const jti = generateRandomString(20);
+      user.jti = jti;
+      token = generateJwtToken({ id: user._id, jti });
+    }
+
+    if (isUserExists && !user.role) {
+      user.role = role;
+      user.isVerified = true;
+    }
+
     await user.save();
-
-    const token = generateJwtToken({ id: user._id, jti });
-
     let updatedProfileImage = null;
     if (user?.profileImage) {
       if (user.profileImage.includes("https")) {
@@ -374,10 +388,11 @@ const socialLogin = TryCatch(
       }
     }
 
-    res.status(200).json({
-      success: true,
-      token,
-      user: getFileteredUser(user.toObject()),
+    return SUCCESS(res, 200, "User logged in successfully", {
+      data: {
+        token: token ? token : null,
+        user: getFileteredUser(user.toObject()),
+      },
     });
   }
 );
@@ -397,10 +412,10 @@ const updateUser = TryCatch(
       visibility,
     } = req.body;
 
-    const { profileImage } = getImages(req, ["profileImage"]);
+    const images = getImages(req, ["profileImage"]);
 
     if (username) user.username = username;
-    if (profileImage) user.profileImage = profileImage;
+    if (images?.profileImage) user.profileImage = images.profileImage[0];
     if (phone && countryCode) {
       user.countryCode = countryCode;
       user.phone = phone;
@@ -458,6 +473,19 @@ const getUser = TryCatch(
   }
 );
 
+const getUserProfile = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.params;
+    const user = await getUserById(userId);
+
+    return SUCCESS(res, 200, "User fetched successfully", {
+      data: {
+        user: getFileteredUser(user.toObject()),
+      },
+    });
+  }
+);
+
 const resetPassword = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const { user } = req;
@@ -503,6 +531,7 @@ export default {
   updateUser,
   changeCredentials,
   getUser,
+  getUserProfile,
   resetPassword,
   logout,
   removeAccount,

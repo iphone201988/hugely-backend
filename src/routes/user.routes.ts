@@ -29,7 +29,7 @@ userRouter.put(
 userRouter.put(
   "/completeRegistration",
   upload.fields([{ name: "photos", maxCount: 4 }]),
-  validateFiles(["photos"]),
+  // validateFiles(["photos"]),
   validate(userSchema.completeRegistrationSchema),
   userController.completeRegistration
 );
@@ -51,7 +51,6 @@ userRouter.put(
   "/updateUser",
   authenticationMiddleware,
   upload.fields([{ name: "profileImage", maxCount: 1 }]),
-  validateFiles(["profileImage"]),
   validate(userSchema.updateUserSchema),
   userController.updateUser
 );
@@ -68,12 +67,21 @@ userRouter.put(
   userController.resetPassword
 );
 
-userRouter.get("/", authenticationMiddleware, userController.getUser);
 userRouter.get(
   "/searchCareTaker",
   validate(userSchema.searchCareTakerSchema),
   userController.searchCareTaker
 );
+
+userRouter.get(
+  "/:userId",
+  authenticationMiddleware,
+  validate(userSchema.getUserProfileSchema),
+  userController.getUserProfile
+);
+
+userRouter.get("/", authenticationMiddleware, userController.getUser);
+
 userRouter.delete("/", authenticationMiddleware, userController.removeAccount);
 
 export default userRouter;
