@@ -48,30 +48,33 @@ const userSchema = new Schema<UserModel>(
       type: String,
       enum: [userRole.USER, userRole.CARETAKER],
     },
-    relationship: { type: String },
-    country: { type: String },
+    relationship: { type: String, default: null },
+    country: { type: String, default: null },
     gender: { type: String, enum: [gender.MALE, gender.FEMALE, gender.OTHERS] },
-    dob: { type: String },
-    yourIntellectualDisabilities: { type: String },
-    partnerIntellectualDisabilities: { type: String },
-    bio: { type: String },
+    dob: { type: String, default: null },
+    yourIntellectualDisabilities: { type: String, default: null },
+    partnerIntellectualDisabilities: { type: String, default: null },
+    bio: { type: String, default: null },
     careTakerId: [{ type: Schema.Types.ObjectId, ref: "user" }],
     drink: {
       type: String,
       enum: Object.values(drinkHabbit),
+      default: null,
     },
     likeToDate: {
       type: String,
       enum: Object.values(gender),
+      default: null,
     },
     ageGroup: {
       type: String,
       enum: Object.values(ageGroup),
+      default: null,
     },
-    interests: [{ type: String }],
+    interests: [{ type: String, default: null }],
     photos: [{ type: String }],
-    profileImage: { type: String },
-    careTakerCode: { type: String },
+    profileImage: { type: String, default: null },
+    careTakerCode: { type: String, default: null },
     isRegistrationCompleted: { type: Boolean, default: false },
     enableNotification: { type: Boolean, default: false },
     visibility: {
@@ -86,8 +89,8 @@ const userSchema = new Schema<UserModel>(
   { timestamps: true }
 );
 
-userSchema.index({ location: '2dsphere' });
-  
+userSchema.index({ location: "2dsphere" });
+
 userSchema.pre("save", async function () {
   if (this.isModified("password")) {
     const hashedPassword = await bcrypt.hash(this.password, 10);

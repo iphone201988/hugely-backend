@@ -43,7 +43,7 @@ export const getImages = (req: Request, fileNames: Array<string>) => {
       [fileNames[0]]: "/uploads/" + req.file.filename,
     };
   }
-  
+
   // Multiple files uploaded
   const files: any = {};
   fileNames.forEach((fileKey: string) => {
@@ -62,11 +62,14 @@ export const getFileteredUser = (user: UserModel) => {
   return {
     ...user,
     password: undefined,
+    unVerifiedTempCredentials: undefined,
     jti: undefined,
+    otp: undefined,
+    otpExpiry: undefined,
+    otpVerified: undefined,
     createdAt: undefined,
     updatedAt: undefined,
     __v: undefined,
-    location: undefined,
     isDeleted: undefined,
     socialType: undefined,
     deviceToken: undefined,

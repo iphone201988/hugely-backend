@@ -42,6 +42,8 @@ export interface UserModel extends Document {
   unVerifiedTempCredentials: {
     email: string;
   };
+  createdAt: Date;
+  updatedAt: Date;
 
   // Methods
   matchPassword(password: string): Promise<boolean>;
@@ -56,10 +58,20 @@ export interface SwipeLogsModel extends Document {
   updatedAt: Date;
 }
 
-export interface MatchesModel extends Document {
-  match: Array<any>;
+export interface ChatModel extends Document {
+  match: Array<{ userId: any; isBlocked: boolean }>;
   lastMessage: string;
   hasUnreadMessages: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MessageModel extends Document {
+  chatId: any;
+  senderId: any;
+  message: string;
+  type: string;
+  isRead: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -5,7 +5,7 @@ import SwipeLogs from "../model/swipeLogs.model";
 import ErrorHandler from "../utils/ErrorHandler";
 import { GetLikesRequest, SwipeUsersRequest } from "../type/API/Swipe/types";
 import { userRole } from "../utils/enums";
-import Matches from "../model/matches.model";
+import Matches from "../model/chat.model";
 
 const swipeUsers = TryCatch(
   async (
@@ -52,6 +52,7 @@ const swipeUsers = TryCatch(
             { _id: { $ne: user._id } },
             { _id: { $nin: likedUserIds } },
             { _id: { $nin: rejectedUserIds } },
+            { role: userRole.USER },
           ],
         },
       },
@@ -70,7 +71,7 @@ const swipeUsers = TryCatch(
 
 const rejectUser = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req;
+    const { userId, user } = req;
     const { rejectedUserId } = req.body;
 
     let swipeLogs = await SwipeLogs.findOne({ userId });
@@ -98,7 +99,7 @@ const rejectUser = TryCatch(
 
 const sendLike = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req;
+    const { userId, user } = req;
     const { likedUserId } = req.body;
 
     let [swipeLogs, likedUserSwipeLogs] = await Promise.all([
@@ -153,8 +154,8 @@ const getLikes = TryCatch(
     next: NextFunction
   ) => {
     const { userId, user } = req;
-    let { likeSent, page = 1 } = req.query;
-    likeSent = Boolean(likeSent);
+    const { likeSent, page = 1 } = req.query;
+
     const isCareTaker = user.role == userRole.CARETAKER;
     const userIds = [];
 
@@ -170,7 +171,7 @@ const getLikes = TryCatch(
       userIds.push(userId);
     }
 
-    const key = likeSent ? "likeSent" : "receivedLikes";
+    const key = likeSent == "true" ? "likeSent" : "receivedLikes";
     const swipeLogs = await SwipeLogs.findOne({ userId: { $in: userIds } })
       .select(key)
       .populate(key, "username profileImage");

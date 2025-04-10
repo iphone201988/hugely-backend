@@ -39,3 +39,10 @@ export const socialTypeEnums = {
   FACEBOOK: 2,
   APPLE: 3,
 };
+
+export const messageTypeEnum = {
+  TEXT: "text",
+  IMAGE: "image",
+  VIDEO: "video",
+  AUDIO: "audio",
+};

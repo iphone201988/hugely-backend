@@ -6,5 +6,5 @@ export type SwipeUsersRequest = {
 
 export type GetLikesRequest = {
   page: number;
-  likeSent: boolean;
+  likeSent: string;
 };

@@ -370,7 +370,7 @@ const socialLogin = TryCatch(
     if (isUserExists && user.isRegistrationCompleted) {
       const jti = generateRandomString(20);
       user.jti = jti;
-      token = generateJwtToken({ id: user._id, jti });
+      token = generateJwtToken({ userId: user._id, jti });
     }
 
     if (isUserExists && !user.role) {
