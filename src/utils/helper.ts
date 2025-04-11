@@ -36,7 +36,7 @@ export const generateJwtToken = (payload: any) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
 
-export const getImages = (req: Request, fileNames: Array<string>) => {
+export const getFiles = (req: Request, fileNames: Array<string>) => {
   // Single file uploaded
   if (fileNames.length == 1 && req.file) {
     return {

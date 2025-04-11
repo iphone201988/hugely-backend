@@ -7,7 +7,7 @@ import {
   generateOTP,
   generateRandomString,
   getFileteredUser,
-  getImages,
+  getFiles,
 } from "../utils/helper";
 import {
   generateUniqueCode,
@@ -217,7 +217,7 @@ const completeRegistration = TryCatch(
     }
 
     if (user.role == userRole.USER) {
-      const { photos } = getImages(req, ["photos"]);
+      const { photos } = getFiles(req, ["photos"]);
       if (photos.length < 2) {
         return next(new ErrorHandler("Minimum 2 photos are required", 400));
       }
@@ -412,7 +412,7 @@ const updateUser = TryCatch(
       visibility,
     } = req.body;
 
-    const images = getImages(req, ["profileImage"]);
+    const images = getFiles(req, ["profileImage"]);
 
     if (username) user.username = username;
     if (images?.profileImage) user.profileImage = images.profileImage[0];

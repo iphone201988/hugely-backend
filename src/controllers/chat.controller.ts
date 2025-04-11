@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { SUCCESS, TryCatch } from "../utils/helper";
+import { SUCCESS, TryCatch, getFiles } from "../utils/helper";
 import { userRole } from "../utils/enums";
 import Chat from "../model/chat.model";
 import User from "../model/user.model";
@@ -69,7 +69,7 @@ const searchUsers = TryCatch(
   }
 );
 
-const blockUser = TryCatch(
+const blockUnblockUser = TryCatch(
   async (
     req: Request<{}, {}, {}, BlockUserRequest>,
     res: Response,
@@ -91,10 +91,16 @@ const blockUser = TryCatch(
       return next(new ErrorHandler("You are not matched with this user", 404));
     }
 
-    chat.match[matchIndex].isBlocked = true;
+    chat.match[matchIndex].isBlocked = !chat.match[matchIndex].isBlocked;
     await chat.save();
 
-    return SUCCESS(res, 200, "User blocked successfully");
+    return SUCCESS(
+      res,
+      200,
+      `User ${
+        chat.match[matchIndex].isBlocked ? "blocked" : "unblocked"
+      } successfully`
+    );
   }
 );
 
@@ -129,9 +135,60 @@ const getChatMessages = TryCatch(
   }
 );
 
+const uploadMedia = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req;
+    const { chatId } = req.body;
+
+    const chat = await Chat.find({
+      _id: chatId,
+      "match.userId": { $in: [userId] },
+    });
+
+    if (!chat) {
+      return next(new ErrorHandler("Chat not found", 404));
+    }
+
+    const { media } = getFiles(req, ["media"]);
+
+    return SUCCESS(res, 200, "Media uploaded successfully", {
+      data: media,
+    });
+  }
+);
+
+const getBlockedUsers = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req;
+
+    const chats = await Chat.find({
+      "match.userId": { $in: [userId] },
+    });
+
+    const blockedUsers = [];
+
+    chats.forEach((chat) => {
+      chat.match.forEach((match) => {
+        if (match.userId != userId && match.isBlocked) {
+          blockedUsers.push({
+            chatId: chat._id,
+            userId: match.userId,
+          });
+        }
+      });
+    });
+
+    return SUCCESS(res, 200, "Blocked users retrieved successfully", {
+      data: blockedUsers,
+    });
+  }
+);
+
 export default {
   getMatches,
   searchUsers,
-  blockUser,
+  blockUnblockUser,
   getChatMessages,
+  uploadMedia,
+  getBlockedUsers,
 };

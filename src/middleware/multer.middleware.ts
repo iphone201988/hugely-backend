@@ -9,8 +9,10 @@ if (!fs.existsSync(dir)) {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log("file.mimetype::::", file.mimetype, file);
+    const isImage = req.file["profileImage"] || req.file["photos"];
+
     if (
+      isImage &&
       !file.mimetype.includes("image") &&
       !file.mimetype.includes("octet-stream")
     ) {

@@ -65,6 +65,27 @@ const useSockets = (
             return socket.emit("error", "Chat not found");
           }
 
+          const user = chat.match.find(
+            (match) => match.userId.toString() == socket.userId
+          );
+
+          const receiver = chat.match.find(
+            (match) => match.userId.toString() != socket.userId
+          );
+
+          const isBlocked = receiver?.isBlocked || user?.isBlocked;
+
+          if (isBlocked) {
+            return socket.emit(
+              "error",
+              "You cannot send messages to this user"
+            );
+          }
+
+          const receiverId = receiver.userId.toString();
+
+          const receiverSocketId = getUser(receiverId);
+
           chat.lastMessage = message;
           chat.hasUnreadMessages = true;
           await chat.save();
@@ -76,13 +97,7 @@ const useSockets = (
             type,
           });
 
-          const receiverId = chat.match.find(
-            (match) => match.userId.toString() !== socket.userId
-          )?.userId;
-
-          const receiverSocketId = getUser(receiverId);
-
-          if (receiverSocketId) {
+          if (receiverSocketId && !isBlocked) {
             io.to(receiverSocketId).emit("receiveMessage", {
               message,
               chatId,

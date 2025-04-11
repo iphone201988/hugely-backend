@@ -3,6 +3,8 @@ import { authenticationMiddleware } from "../middleware/auth.middleware";
 import matchesController from "../controllers/chat.controller";
 import validate from "../middleware/validate.middleware";
 import chatSchema from "../schema/chat.schema";
+import upload from "../middleware/multer.middleware";
+import validateFiles from "../middleware/validateFiles.middleware";
 
 const chatRouter = express.Router();
 
@@ -14,10 +16,10 @@ chatRouter.get(
   matchesController.searchUsers
 );
 chatRouter.put(
-  "/blockUser",
+  "/blockUnblockUser",
   authenticationMiddleware,
-  validate(chatSchema.blockUserSchema),
-  matchesController.blockUser
+  validate(chatSchema.blockUnblockUserSchema),
+  matchesController.blockUnblockUser
 );
 
 chatRouter.get(
@@ -25,6 +27,21 @@ chatRouter.get(
   authenticationMiddleware,
   validate(chatSchema.getChatMessagesSchema),
   matchesController.getChatMessages
+);
+
+chatRouter.get(
+  "/getBlockedUsers",
+  authenticationMiddleware,
+  matchesController.getBlockedUsers
+);
+
+chatRouter.post(
+  "/uploadMedia",
+  authenticationMiddleware,
+  upload.fields([{ name: "media" }]),
+  validateFiles(["media"]),
+  validate(chatSchema.uploadMediaSchema),
+  matchesController.uploadMedia
 );
 
 export default chatRouter;

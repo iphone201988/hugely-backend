@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { ObjectIdValidation, stringValidation } from ".";
+import { messageTypeEnum } from "../utils/enums";
 
 const searchUserSchema = {
   query: Joi.object({
@@ -7,7 +8,7 @@ const searchUserSchema = {
   }),
 };
 
-const blockUserSchema = {
+const blockUnblockUserSchema = {
   query: Joi.object({
     chatId: ObjectIdValidation("Chat ID"),
     blockUserId: ObjectIdValidation("Blocked User ID"),
@@ -20,4 +21,15 @@ const getChatMessagesSchema = {
   }),
 };
 
-export default { searchUserSchema, blockUserSchema, getChatMessagesSchema };
+const uploadMediaSchema = {
+  body: Joi.object({
+    chatId: ObjectIdValidation("Chat ID"),
+  }),
+};
+
+export default {
+  searchUserSchema,
+  blockUnblockUserSchema,
+  getChatMessagesSchema,
+  uploadMediaSchema,
+};
