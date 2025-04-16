@@ -10,7 +10,7 @@ const chatSchema = new Schema<ChatModel>(
         isBlockedByCT: { type: Boolean, default: false },
       },
     ],
-    lastMessage: { type: Schema.Types.ObjectId, ref: "chats", default: null },
+    lastMessage: { type: Schema.Types.ObjectId, ref: "messages", default: null },
     hasUnreadMessages: { type: Boolean, default: false },
   },
   { timestamps: true }
