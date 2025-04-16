@@ -9,7 +9,7 @@ if (!fs.existsSync(dir)) {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const isImage = req.file["profileImage"] || req.file["photos"];
+    const isImage = req.files["profileImage"] || req.files["photos"];
 
     if (
       isImage &&

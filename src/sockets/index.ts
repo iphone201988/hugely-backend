@@ -41,7 +41,7 @@ const useSockets = (
         return next(new Error("Authentication failed. Invalid token."));
       }
 
-      socket.userId = decoded.id;
+      socket.userId = decoded.userId;
 
       next();
     } catch (err) {
@@ -52,63 +52,55 @@ const useSockets = (
   io.on("connection", (socket: CustomSocket) => {
     addUser(socket.userId, socket.id);
 
-    socket.on(
-      "sendMessage",
-      async (
-        message: string,
-        chatId: string,
-        type: string = messageTypeEnum.TEXT
-      ) => {
-        try {
-          const chat: ChatModel = await Chat.findById(chatId);
-          if (!chat) {
-            return socket.emit("error", "Chat not found");
-          }
+    socket.on("sendMessage", async (payload: any) => {
+      const { message, chatId, type } = payload;
+      try {
+        const chat: ChatModel = await Chat.findById(chatId);
 
-          const user = chat.match.find(
-            (match) => match.userId.toString() == socket.userId
-          );
-
-          const receiver = chat.match.find(
-            (match) => match.userId.toString() != socket.userId
-          );
-
-          const isBlocked = receiver?.isBlocked || user?.isBlocked;
-
-          if (isBlocked) {
-            return socket.emit(
-              "error",
-              "You cannot send messages to this user"
-            );
-          }
-
-          const receiverId = receiver.userId.toString();
-
-          const receiverSocketId = getUser(receiverId);
-
-          chat.lastMessage = message;
-          chat.hasUnreadMessages = true;
-          await chat.save();
-
-          await Message.create({
-            chatId,
-            senderId: socket.userId,
-            message,
-            type,
-          });
-
-          if (receiverSocketId && !isBlocked) {
-            io.to(receiverSocketId).emit("receiveMessage", {
-              message,
-              chatId,
-              senderId: socket.userId,
-            });
-          }
-        } catch (error) {
-          socket.emit("error", "An error occurred while sending the message");
+        if (!chat) {
+          return socket.emit("error", "Chat not found");
         }
+
+        const user = chat.match.find(
+          (match) => match.userId.toString() == socket.userId
+        );
+
+        const receiver = chat.match.find(
+          (match) => match.userId.toString() != socket.userId
+        );
+
+        const isBlocked = receiver?.isBlocked || user?.isBlocked;
+
+        if (isBlocked) {
+          return socket.emit("error", "You cannot send messages to this user");
+        }
+
+        const receiverId = receiver.userId.toString();
+
+        const receiverSocketId = getUser(receiverId);
+
+        chat.lastMessage = message;
+        chat.hasUnreadMessages = true;
+        await chat.save();
+
+        const newMessage = await Message.create({
+          chatId,
+          senderId: socket.userId,
+          message,
+          type,
+        });
+
+        if (receiverSocketId && !isBlocked) {
+          io.to(receiverSocketId).emit("receiveMessage", newMessage);
+        }
+      } catch (error) {
+        console.log("error:::", error);
+        return socket.emit(
+          "error",
+          "An error occurred while sending the message"
+        );
       }
-    );
+    });
 
     socket.on("disconnect", () => {
       removeUser(socket.id);

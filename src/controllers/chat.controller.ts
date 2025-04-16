@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { SUCCESS, TryCatch, getFiles } from "../utils/helper";
-import { userRole } from "../utils/enums";
 import Chat from "../model/chat.model";
 import User from "../model/user.model";
 import { ChatModel } from "../type/Database/types";
@@ -11,24 +10,14 @@ import {
   GetChatMessagesRequest,
   SearchUsersRequest,
 } from "../type/API/Chat";
+import { getRoleBasedUsers } from "../services/user.services";
+import { userRole } from "../utils/enums";
+import ReportUser from "../model/reportUser.model";
 
 const getMatches = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, user } = req;
-    const isCareTaker = user.role === userRole.CARETAKER;
-    const userIds = [];
-
-    if (isCareTaker) {
-      const users = await User.find({ careTakerId: { $in: [userId] } }).select(
-        "_id"
-      );
-
-      users.forEach((user) => {
-        userIds.push(user._id);
-      });
-    } else {
-      userIds.push(userId);
-    }
+    const { user } = req;
+    const userIds = await getRoleBasedUsers(user);
 
     const chats = await Chat.find({
       "match.userId": { $in: userIds },
@@ -42,11 +31,12 @@ const getMatches = TryCatch(
 
 const searchUsers = TryCatch(
   async (req: Request<{}, {}, {}, SearchUsersRequest>, res: Response) => {
-    const { userId } = req;
+    const { userId, user } = req;
     const { keyword } = req.query;
+    const userIds = await getRoleBasedUsers(user);
 
     const chats: ChatModel[] = await Chat.find({
-      "match.userId": { $in: [userId] },
+      "match.userId": { $in: userIds },
     });
 
     const otherUserIds = [];
@@ -75,12 +65,29 @@ const blockUnblockUser = TryCatch(
     res: Response,
     next: NextFunction
   ) => {
+    const { userId, user } = req;
     const { chatId, blockUserId } = req.query;
+    const isCareTaker = user.role == userRole.CARETAKER;
 
     const chat = await Chat.findById(chatId);
 
     if (!chat) {
       return next(new ErrorHandler("Chat not found", 404));
+    }
+
+    if (isCareTaker) {
+      const userToBeBlocked = await User.findOne({
+        _id: blockUserId,
+        careTakerId: { $in: [userId] },
+      });
+
+      if (!userToBeBlocked)
+        return next(
+          new ErrorHandler(
+            "You don't have access to block or unblock this user",
+            400
+          )
+        );
     }
 
     const matchIndex = chat.match.findIndex(
@@ -92,6 +99,10 @@ const blockUnblockUser = TryCatch(
     }
 
     chat.match[matchIndex].isBlocked = !chat.match[matchIndex].isBlocked;
+    if (isCareTaker && chat.match[matchIndex].isBlocked) {
+      chat.match[matchIndex].isBlockedByCT = true;
+    }
+
     await chat.save();
 
     return SUCCESS(
@@ -159,10 +170,11 @@ const uploadMedia = TryCatch(
 
 const getBlockedUsers = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req;
+    const { userId, user } = req;
+    const userIds = getRoleBasedUsers(user);
 
     const chats = await Chat.find({
-      "match.userId": { $in: [userId] },
+      "match.userId": { $in: userIds },
     });
 
     const blockedUsers = [];
@@ -173,6 +185,7 @@ const getBlockedUsers = TryCatch(
           blockedUsers.push({
             chatId: chat._id,
             userId: match.userId,
+            isBlockedByCT: match.isBlockedByCT,
           });
         }
       });
@@ -184,6 +197,24 @@ const getBlockedUsers = TryCatch(
   }
 );
 
+const reportUser = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId: reportedBy } = req;
+
+    const { chatId, reportedUserId, description, type } = req.body;
+
+    await ReportUser.create({
+      chatId,
+      reportedUserId,
+      description,
+      type,
+      reportedBy,
+    });
+
+    return SUCCESS(res, 201, "User reported successfully");
+  }
+);
+
 export default {
   getMatches,
   searchUsers,
@@ -191,4 +222,5 @@ export default {
   getChatMessages,
   uploadMedia,
   getBlockedUsers,
+  reportUser,
 };

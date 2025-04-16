@@ -1,6 +1,7 @@
 import User from "../model/user.model";
 import { UserModel } from "../type/Database/types";
 import ErrorHandler from "../utils/ErrorHandler";
+import { userRole } from "../utils/enums";
 
 export const getUserById = async (userId: string): Promise<UserModel> => {
   const user = await User.findOne({ _id: userId, isDeleted: false });
@@ -57,4 +58,26 @@ export const generateUniqueCode = async () => {
     `Unable to generate unique code after ${maxAttempts} attempts`,
     500
   );
+};
+
+export const getRoleBasedUsers = async (
+  user: UserModel
+): Promise<Array<string>> => {
+  const userId = user._id;
+  const isCareTaker = user.role === userRole.CARETAKER;
+  const userIds = [];
+
+  if (isCareTaker) {
+    const users = await User.find({ careTakerId: { $in: [userId] } }).select(
+      "_id"
+    );
+
+    users.forEach((user) => {
+      userIds.push(user._id.toString());
+    });
+  } else {
+    userIds.push(userId);
+  }
+
+  return userIds;
 };

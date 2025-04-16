@@ -46,3 +46,10 @@ export const messageTypeEnum = {
   VIDEO: "video",
   AUDIO: "audio",
 };
+
+export const reportTypeEnum = {
+  CATFISHING: "catfishing",
+  ABUSIVE_BEHAVIOUR: "abusive_behaviour",
+  INAPPROPRIATE_CHAT: "inappropriate_chat",
+  OTHERS: "others",
+};

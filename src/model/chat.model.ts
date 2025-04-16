@@ -7,6 +7,7 @@ const chatSchema = new Schema<ChatModel>(
       {
         userId: { type: Schema.Types.ObjectId, ref: "user" },
         isBlocked: { type: Boolean, default: false },
+        isBlockedByCT: { type: Boolean, default: false },
       },
     ],
     lastMessage: { type: String },

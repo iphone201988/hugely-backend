@@ -5,7 +5,7 @@ import SwipeLogs from "../model/swipeLogs.model";
 import ErrorHandler from "../utils/ErrorHandler";
 import { GetLikesRequest, SwipeUsersRequest } from "../type/API/Swipe/types";
 import { userRole } from "../utils/enums";
-import Matches from "../model/chat.model";
+import Chat from "../model/chat.model";
 
 const swipeUsers = TryCatch(
   async (
@@ -20,6 +20,8 @@ const swipeUsers = TryCatch(
     const swipeLogs = await SwipeLogs.findOne({ userId: user._id });
     const likedUserIds = swipeLogs?.likeSent || [];
     const rejectedUserIds = swipeLogs?.rejectedUserIds || [];
+    const limit = 10;
+    const skip = (page - 1) * limit;
 
     const users = await User.aggregate([
       {
@@ -71,7 +73,7 @@ const swipeUsers = TryCatch(
 
 const rejectUser = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, user } = req;
+    const { userId } = req;
     const { rejectedUserId } = req.body;
 
     let swipeLogs = await SwipeLogs.findOne({ userId });
@@ -115,6 +117,7 @@ const sendLike = TryCatch(
     const isAlreadyLiked = swipeLogs.likeSent.find(
       (id) => id.toString() === likedUserId
     );
+
     const isAlreadyRejected = swipeLogs.rejectedUserIds.find(
       (id) => id.toString() === likedUserId
     );
@@ -136,8 +139,8 @@ const sendLike = TryCatch(
     );
 
     if (receivedLike) {
-      await Matches.create({
-        match: [userId, likedUserId],
+      await Chat.create({
+        match: [{ userId }, { userId: likedUserId }],
         lastMessage: "",
         hasUnreadMessages: false,
       });
@@ -158,6 +161,8 @@ const getLikes = TryCatch(
 
     const isCareTaker = user.role == userRole.CARETAKER;
     const userIds = [];
+    const limit = 10;
+    const skip = (page - 1) * 10;
 
     if (isCareTaker) {
       const users = await User.find({ careTakerId: { $in: [userId] } }).select(
@@ -172,6 +177,11 @@ const getLikes = TryCatch(
     }
 
     const key = likeSent == "true" ? "likeSent" : "receivedLikes";
+    const count = await SwipeLogs.findOne({
+      userId: { $in: userIds },
+    }).countDocuments();
+    const totalPages = Math.ceil(count / limit);
+
     const swipeLogs = await SwipeLogs.findOne({ userId: { $in: userIds } })
       .select(key)
       .populate(key, "username profileImage");
