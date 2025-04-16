@@ -5,6 +5,7 @@ import validate from "../middleware/validate.middleware";
 import chatSchema from "../schema/chat.schema";
 import upload from "../middleware/multer.middleware";
 import validateFiles from "../middleware/validateFiles.middleware";
+import uploadS3 from "../middleware/multerS3.middleware";
 
 const chatRouter = express.Router();
 
@@ -38,7 +39,7 @@ chatRouter.get(
 chatRouter.post(
   "/uploadMedia",
   authenticationMiddleware,
-  upload.fields([{ name: "media" }]),
+  uploadS3.fields([{ name: "media" }]),
   validateFiles(["media"]),
   validate(chatSchema.uploadMediaSchema),
   chatController.uploadMedia

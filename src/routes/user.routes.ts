@@ -5,6 +5,7 @@ import userSchema from "../schema/user.schema";
 import upload from "../middleware/multer.middleware";
 import validateFiles from "../middleware/validateFiles.middleware";
 import { authenticationMiddleware } from "../middleware/auth.middleware";
+import uploadS3 from "../middleware/multerS3.middleware";
 
 const userRouter = express.Router();
 
@@ -28,7 +29,7 @@ userRouter.put(
 
 userRouter.put(
   "/completeRegistration",
-  upload.fields([{ name: "photos", maxCount: 4 }]),
+  uploadS3.fields([{ name: "photos", maxCount: 4 }]),
   // validateFiles(["photos"]),
   validate(userSchema.completeRegistrationSchema),
   userController.completeRegistration
@@ -50,7 +51,7 @@ userRouter.post(
 userRouter.put(
   "/updateUser",
   authenticationMiddleware,
-  upload.fields([{ name: "profileImage", maxCount: 1 }]),
+  uploadS3.fields([{ name: "profileImage", maxCount: 1 }]),
   validate(userSchema.updateUserSchema),
   userController.updateUser
 );

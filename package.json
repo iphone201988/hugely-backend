@@ -15,6 +15,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.787.0",
     "bcrypt": "^5.1.1",
     "concurrently": "^9.1.0",
     "cors": "^2.8.5",
@@ -38,8 +39,12 @@
     "@types/mongoose": "^5.11.97",
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.12",
+    "@types/multer-s3": "^3.0.3",
     "@types/nodemailer": "^6.4.17",
+    "@types/npm": "^7.19.3",
     "@types/otp-generator": "^4.0.2",
+    "i": "^0.3.7",
+    "multer-s3": "^3.0.1",
     "nodemon": "^3.1.7"
   }
 }

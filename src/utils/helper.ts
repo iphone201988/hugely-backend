@@ -37,19 +37,11 @@ export const generateJwtToken = (payload: any) => {
 };
 
 export const getFiles = (req: Request, fileNames: Array<string>) => {
-  // Single file uploaded
-  if (fileNames.length == 1 && req.file) {
-    return {
-      [fileNames[0]]: "/uploads/" + req.file.filename,
-    };
-  }
-
-  // Multiple files uploaded
   const files: any = {};
   fileNames.forEach((fileKey: string) => {
     if (req?.files && req.files[fileKey]) {
       files[fileKey] = req.files[fileKey].map(
-        (file: any) => "/uploads/" + file.filename
+        (file: any) => "/uploads/" + file.key
       );
     }
   });
