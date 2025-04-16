@@ -60,7 +60,7 @@ export interface SwipeLogsModel extends Document {
 
 export interface ChatModel extends Document {
   match: Array<{ userId: any; isBlocked: boolean; isBlockedByCT: boolean }>;
-  lastMessage: string;
+  lastMessage: any;
   hasUnreadMessages: boolean;
   createdAt: Date;
   updatedAt: Date;

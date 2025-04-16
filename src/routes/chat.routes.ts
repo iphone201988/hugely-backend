@@ -10,6 +10,7 @@ import uploadS3 from "../middleware/multerS3.middleware";
 const chatRouter = express.Router();
 
 chatRouter.get("/", authenticationMiddleware, chatController.getMatches);
+
 chatRouter.get(
   "/search",
   authenticationMiddleware,

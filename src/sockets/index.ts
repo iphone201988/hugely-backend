@@ -79,16 +79,16 @@ const useSockets = (
 
         const receiverSocketId = getUser(receiverId);
 
-        chat.lastMessage = message;
-        chat.hasUnreadMessages = true;
-        await chat.save();
-
         const newMessage = await Message.create({
           chatId,
           senderId: socket.userId,
           message,
           type,
         });
+
+        chat.lastMessage = newMessage._id;
+        chat.hasUnreadMessages = true;
+        await chat.save();
 
         if (receiverSocketId && !isBlocked) {
           io.to(receiverSocketId).emit("receiveMessage", newMessage);

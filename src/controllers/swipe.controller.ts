@@ -141,7 +141,6 @@ const sendLike = TryCatch(
     if (receivedLike) {
       await Chat.create({
         match: [{ userId }, { userId: likedUserId }],
-        lastMessage: "",
         hasUnreadMessages: false,
       });
     }
