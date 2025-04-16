@@ -21,7 +21,9 @@ const getMatches = TryCatch(
 
     const chats = await Chat.find({
       "match.userId": { $in: userIds },
-    }).populate("match.userId", "username profileImage");
+    })
+      .populate("match.userId", "username profileImage")
+      .populate("lastMessage", "message type");
 
     return SUCCESS(res, 200, "Matches retrieved successfully", {
       data: { chats },
