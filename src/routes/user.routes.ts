@@ -8,6 +8,7 @@ import { authenticationMiddleware } from "../middleware/auth.middleware";
 import uploadS3 from "../middleware/multerS3.middleware";
 
 const userRouter = express.Router();
+userRouter.get("/getAllusers", userController.getAllusers);
 
 userRouter.post(
   "/",

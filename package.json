@@ -8,7 +8,7 @@
     "watch": "tsc --watch",
     "pre:dev": "nodemon dist/server.js",
     "dev": "concurrently \"npm run watch\" \"npm run pre:dev\"",
-    "start": "npm run build && node dist/server.js"
+    "start": "npm run build && node dist/server2.js"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +16,7 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",
+    "agora-token": "^2.0.4",
     "bcrypt": "^5.1.1",
     "concurrently": "^9.1.0",
     "cors": "^2.8.5",

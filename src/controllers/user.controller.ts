@@ -519,6 +519,16 @@ const removeAccount = TryCatch(
   }
 );
 
+const getAllusers = TryCatch(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const users = await User.find({});
+    const finalData = users.map((user) => getFileteredUser(user.toObject()));
+    return SUCCESS(res, 200, "Users fetched successfully", {
+      data: { users: finalData },
+    });
+  }
+);
+
 export default {
   register,
   completeRegistration,
@@ -535,4 +545,5 @@ export default {
   resetPassword,
   logout,
   removeAccount,
+  getAllusers,
 };

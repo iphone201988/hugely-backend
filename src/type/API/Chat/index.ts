@@ -9,3 +9,8 @@ export type BlockUserRequest = {
 export type GetChatMessagesRequest = {
   chatId: string;
 };
+
+export type GenerateAgoraTokenRequest = {
+  channelName: string;
+  rtcRole: string;
+};

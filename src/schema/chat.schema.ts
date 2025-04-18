@@ -45,10 +45,22 @@ const reportUserSchema = {
   }),
 };
 
+const generateAgoraTokenSchema = {
+  query: Joi.object({
+    channelName: stringValidation("Channel Name"),
+    rtcRole: Joi.string().valid("subscriber", "publisher").required().messages({
+      "string.base": `Role must be a string.`,
+      "any.only": `Role must be one of: subscriber,publisher.`,
+      "any.required": `Role is required.`,
+    }),
+  }),
+};
+
 export default {
   searchUserSchema,
   blockUnblockUserSchema,
   getChatMessagesSchema,
   uploadMediaSchema,
-  reportUserSchema
+  reportUserSchema,
+  generateAgoraTokenSchema,
 };

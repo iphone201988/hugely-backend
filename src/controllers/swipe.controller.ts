@@ -23,6 +23,38 @@ const swipeUsers = TryCatch(
     const limit = 10;
     const skip = (page - 1) * limit;
 
+    const totalCount = await User.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [lng, lat] },
+          distanceField: "dist.calculated",
+          spherical: true,
+          query: {
+            $or: [
+              { interests: { $in: user.interests } },
+              { ageGroup: user.ageGroup },
+            ],
+          },
+        },
+      },
+      {
+        $match: {
+          $and: [
+            { _id: { $ne: user._id } },
+            { _id: { $nin: likedUserIds } },
+            { _id: { $nin: rejectedUserIds } },
+            { role: userRole.USER },
+          ],
+        },
+      },
+      {
+        $count: "total",
+      },
+    ]);
+
+    const total = totalCount[0]?.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
     const users = await User.aggregate([
       {
         $geoNear: {
@@ -63,11 +95,22 @@ const swipeUsers = TryCatch(
           username: 1,
           profileImage: 1,
           userId: 1,
+          senderId: 1,
+          lastMessage: 1,
         },
       },
+      { $skip: skip },
+      { $limit: limit },
     ]);
 
-    return SUCCESS(res, 200, "Friends found successfully", { data: users });
+    return SUCCESS(res, 200, "Friends found successfully", {
+      data: users,
+      pagination: {
+        totalPages,
+        page,
+        limit,
+      },
+    });
   }
 );
 

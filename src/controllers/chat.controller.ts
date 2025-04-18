@@ -7,12 +7,14 @@ import ErrorHandler from "../utils/ErrorHandler";
 import Message from "../model/message.model";
 import {
   BlockUserRequest,
+  GenerateAgoraTokenRequest,
   GetChatMessagesRequest,
   SearchUsersRequest,
 } from "../type/API/Chat";
 import { getRoleBasedUsers } from "../services/user.services";
 import { userRole } from "../utils/enums";
 import ReportUser from "../model/reportUser.model";
+import { RtcRole, RtcTokenBuilder } from "agora-token";
 
 const getMatches = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -217,6 +219,37 @@ const reportUser = TryCatch(
   }
 );
 
+const generateAgoraToken = TryCatch(
+  async (
+    req: Request<{}, {}, {}, GenerateAgoraTokenRequest>,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const { userId: uid } = req;
+    const { channelName, rtcRole } = req.query;
+    const role =
+      rtcRole === "subscriber" ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
+    const expireTime = 3600;
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    const privilegeExpireTime = currentTime + expireTime;
+
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      process.env.AGORA_APP_ID,
+      process.env.AGORA_APP_CERTIFICATE,
+      channelName,
+      uid.toString(),
+      role,
+      expireTime,
+      privilegeExpireTime
+    );
+
+    return SUCCESS(res, 200, "Token generated successfully", {
+      data: { token },
+    });
+  }
+);
+
 export default {
   getMatches,
   searchUsers,
@@ -225,4 +258,5 @@ export default {
   uploadMedia,
   getBlockedUsers,
   reportUser,
+  generateAgoraToken,
 };

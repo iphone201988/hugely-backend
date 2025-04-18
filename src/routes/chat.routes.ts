@@ -53,4 +53,11 @@ chatRouter.post(
   chatController.reportUser
 );
 
+chatRouter.get(
+  "/generateAgoraToken",
+  authenticationMiddleware,
+  validate(chatSchema.generateAgoraTokenSchema),
+  chatController.generateAgoraToken
+);
+
 export default chatRouter;
